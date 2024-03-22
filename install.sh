@@ -102,26 +102,30 @@ add_gpg_key() {
 
 # Function to add source files for APT repositories
 add_source_file() {
-    local source_type=$1
-    local url=$2
-    local distribution=$3
-    local components=$4
-    local arch=$5
-    local keyring=$6
+    local file__name=$1
+    local source_type=$2
+    local url=$3
+    local distribution=$4
+    local components=$5
+    local arch=$6
+    local keyring=$7
 
     # Remove old source file if exists
-    if [ -f "/etc/apt/sources.list.d/${source_type}.list" ]; then
-        sudo rm "/etc/apt/sources.list.d/${source_type}.list"
+    if [ -f "/etc/apt/sources.list.d/${file__name}.list" ]; then
+        sudo rm "/etc/apt/sources.list.d/${file__name}.list"
     fi
 
     # Add new source file
-    sudo tee "/etc/apt/sources.list.d/${source_type}.list" > /dev/null <<EOF
+    sudo tee "/etc/apt/sources.list.d/${file__name}.list" > /dev/null <<EOF
 Types: $source_type
 URIs: $url
 Suites: $distribution
 Components: $components
 $(if [ -n "$arch" ]; then echo "Architectures: $arch"; fi)
 $(if [ -n "$keyring" ]; then echo "Signed-By: $keyring"; fi)
+X-Repolib-ID: $file__name
+X-Repolib-Name: $file__name
+Enabled: yes
 EOF
 }
 
@@ -138,32 +142,32 @@ install_apt_sources() {
     # Add source for Librewolf
     local distro=$(if echo " una bookworm vanessa focal jammy bullseye vera uma " | grep -q " $(lsb_release -sc) "; then lsb_release -sc; else echo focal; fi)
     local gpg_librewolf=$(add_gpg_key "https://deb.librewolf.net/keyring.gpg" "librewolf")
-    add_source_file "deb" "https://deb.librewolf.net" "$distro" "main" "amd64" "$gpg_librewolf"
+    add_source_file "librewolf" "deb" "https://deb.librewolf.net" "$distro" "main" "amd64" "$gpg_librewolf"
 
     # Add source for Spotify
     local gpg_spotify=$(add_gpg_key "https://download.spotify.com/debian/pubkey_6224F9941A8AA6D1.gpg" "spotify")
-    add_source_file "deb" "http://repository.spotify.com" "stable" "non-free" "amd64" "$gpg_spotify"
+    add_source_file "spotify" "deb" "http://repository.spotify.com" "stable" "non-free" "amd64" "$gpg_spotify"
 
     # Add source for Miktex
     local gpg_miktex=$(add_gpg_key "https://miktex.org/download/key" "miktex")
-    add_source_file "deb" "https://miktex.org/download/ubuntu" "jammy" "universe" "amd64" "$gpg_miktex"
+    add_source_file "miktex" "deb" "https://miktex.org/download/ubuntu" "jammy" "universe" "amd64" "$gpg_miktex"
 
     # Add source for Sublime Tex and Sublime Merge
     local gpg_sublime=$(add_gpg_key "hhttps://download.sublimetext.com/sublimehq-pub.gpg" "sublimehq-archive")
-    add_source_file "deb" "https://download.sublimetext.com/" "apt/stable/" "" "amd64" "$gpg_sublime"
+    add_source_file "sublime" "deb" "https://download.sublimetext.com/" "apt/stable/" "" "amd64" "$gpg_sublime"
 
     # Add source for Virtual box
     local gpg_virtualbox=$(add_gpg_key "https://www.virtualbox.org/download/oracle_vbox_2016.asc" "oracle-virtualbox-2016")
-    add_source_file "deb" "https://download.virtualbox.org/virtualbox/debian" "jammy" "contrib" "amd64" "$gpg_virtualbox"
+    add_source_file "virtualbox" "deb" "https://download.virtualbox.org/virtualbox/debian" "jammy" "contrib" "amd64" "$gpg_virtualbox"
 
     # Add source for Signal
     local gpg_signal=$(add_gpg_key "https://updates.signal.org/desktop/apt/keys.asc" "signal-desktop-keyring")
-    add_source_file "deb" "https://updates.signal.org/desktop/apt" "xenial" "main" "amd64" "$gpg_signal"
+    add_source_file "signal" "deb" "https://updates.signal.org/desktop/apt" "xenial" "main" "amd64" "$gpg_signal"
 
     # Add source for JDK 17 LTS (Temurin)
     local version=$(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release)
     local gpg_temurin_17=$(add_gpg_key "https://packages.adoptium.net/artifactory/api/gpg/key/public" "adoptium")
-    add_source_file "deb" "https://packages.adoptium.net/artifactory/deb" "$version" "main" "amd64" "$gpg_temurin_17"
+    add_source_file "adoptium" "deb" "https://packages.adoptium.net/artifactory/deb" "$version" "main" "amd64" "$gpg_temurin_17"
 
     # Run all apt installations
     sudo apt-get update && sudo apt-get install -y librewolf       \

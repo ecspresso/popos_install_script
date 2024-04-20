@@ -2,14 +2,22 @@
 
 # Function to display a Zenity dialog with status message
 display_status() {
-    zenity --info --text="$1" --title="Status"
+    local zenity_pid=$(pgrep -f "zenity --info --text=")
+
+    # If a Zenity dialog is found, kill it
+    if [ -n "$zenity_pid" ]; then
+        kill "$zenity_pid" >/dev/null 2>&1
+    fi
+
+    # Display the new status message
+    zenity --info --text="$1" --title="Status" &
     echo $1 | tee /tmp/install.log --append
 }
 
 # Function to install and upgrade system packages
 install_and_upgrade_packages() {
     display_status "Installing and upgrading packages..."
-    sudo apt-get update && sudo apt-get upgrade -y || display_status "Failed to update and install packages."
+    sudo apt-get update && sudo apt-get upgrade -y  && sudo apt-get autoremove -y # || display_status "Failed to update and install packages."
     display_status "Packges installed and upgraded."
 }
 
@@ -23,10 +31,10 @@ setup_ssh() {
 # Function to install CascadiaCode nerd font
 install_cascadia_font() {
     display_status "Installing Cascadia font..."
-    mkdir -p ~/CascadiaCode && cd ~/CascadiaCode || { display_status "Failed to create CascadiaCode font folder."; return 1 }
-    curl -o CascadiaCode.zip -L https://github.com/ryanoasis/nerd-fonts/releases/latest/download/CascadiaCode.zip || { display_status "Failed to to download CascadiaCode."; return 1 }
-    unzip -q CascadiaCode.zip || { display_status "Failed to unzip CascadiaCode."; return 1 }
-    sudo mv *.ttf /usr/share/fonts/truetype/ || { display_status "Failed move font files to /usr/share/fonts/truetype/."; return 1 }
+    mkdir -p ~/CascadiaCode && cd ~/CascadiaCode || { display_status "Failed to create CascadiaCode font folder."; return 1; }
+    curl -o CascadiaCode.zip -L https://github.com/ryanoasis/nerd-fonts/releases/latest/download/CascadiaCode.zip || { display_status "Failed to to download CascadiaCode."; return 1; }
+    unzip -q CascadiaCode.zip || { display_status "Failed to unzip CascadiaCode."; return 1; }
+    sudo mv *.ttf /usr/share/fonts/truetype/ || { display_status "Failed move font files to /usr/share/fonts/truetype/."; return 1; }
     rm -rf ~/CascadiaCode
     display_status "Cascadia font installed."
 }
@@ -34,7 +42,7 @@ install_cascadia_font() {
 # Function to install Starship for terminal
 install_starship_terminal() {
     display_status "Installing Starship Terminal..."
-    curl -sS https://starship.rs/install.sh | sudo bash -s -- --yes && echo 'eval "$(starship init bash)"' | tee -a ~/.bashrc
+    curl -sS https://starship.rs/install.sh | sudo sh -s -- --yes && echo 'eval "$(starship init bash)"' | tee -a ~/.bashrc
     display_status "Starship Terminal installed."
 }
 
@@ -42,38 +50,48 @@ install_starship_terminal() {
 update_gnome_terminal_settings() {
     display_status "Updating GNOME Terminal settings..."
     profile=$(gsettings get org.gnome.Terminal.ProfilesList default | xargs echo)
-    gsettings set org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$profile/ font 'CaskaydiaCove Nerd Font Mono 12'  || { display_status "Failed to set GNOME Terminal font."; return 1 }
+    gsettings set org.gnome.Terminal.Legacy.Profile:/org/gnome/terminal/legacy/profiles:/:$profile/ font 'CaskaydiaCove Nerd Font Mono 12'  || { display_status "Failed to set GNOME Terminal font."; return 1; }
     display_status "GNOME Terminal settings updated."
 }
 
 # Remove old git folder in case of OS refresh to avoid conflicts
 remove_old_git_repos() {
     display_status "Removing old Git repositories..."
-    rm -rf ~/git/xpadneo ~/git/avra ~/git/avrdude || { display_status "Failed to remove old git folders."; return 1 }
+    rm -rf ~/git/xpadneo ~/git/avra ~/git/avrdude ~/git/tio || { display_status "Failed to remove old git folders."; return 1; }
     display_status "Old Git repositories removed."
 }
 
 # Function to install Git repos and software
 install_git_repos_and_software() {
     display_status "Installing Git repositories and software..."
-    mkdir -p ~/git && cd ~/git || { display_status "Failed to create git folder."; return 1 }
+    mkdir -p ~/git && cd ~/git || { display_status "Failed to create git folder."; return 1; }
 
     # Install xpad neo
-    sudo apt-get -y install dkms linux-headers-$(uname -r) || { display_status "Failed to xpadneo requirenments."; return 1 }
-    git clone https://github.com/atar-axis/xpadneo.git && cd xpadneo || { display_status "Failed to clone xpadneo repo."; return 1 }
-    sudo ./install.sh || { display_status "Failed to install xpadneo."; return 1 }
+    sudo apt-get -y install dkms linux-headers-$(uname -r) || { display_status "Failed to xpadneo requirenments."; return 1; }
+    git clone https://github.com/atar-axis/xpadneo.git && cd xpadneo || { display_status "Failed to clone xpadneo repo."; return 1; }
+    sudo ./install.sh || { display_status "Failed to install xpadneo."; return 1; }
 
     # Install AVRA
     cd ~/git
-    git clone https://github.com/Ro5bert/avra.git && cd avra || { display_status "Failed to clone arva repo."; return 1 }
-    sudo make install || { display_status "Failed to install arva."; return 1 }
+    git clone https://github.com/Ro5bert/avra.git && cd avra || { display_status "Failed to clone arva repo."; return 1; }
+    sudo make install || { display_status "Failed to install arva."; return 1; }
 
     # Install avrdude
     cd ~/git
-    sudo apt-get -y install build-essential git cmake ttflex bison libelf-dev libusb-dev libhidapi-dev libftdi1-dev libreadline-dev libserialport-dev || { display_status "Failed to install avrdude requirenments."; return 1 }
-    git clone https://github.com/avrdudes/avrdude.git && cd avrdude || { display_status "Failed to clone avrdude repo."; return 1 }
-    sudo ./build.sh && sudo cmake --build build_linux --target install || { display_status "Failed to install avrdude."; return 1 }
+    sudo apt-get -y install build-essential git cmake flex bison libelf-dev libusb-dev libhidapi-dev libftdi1-dev libreadline-dev libserialport-dev || { display_status "Failed to install avrdude requirenments."; return 1; }
+    git clone https://github.com/avrdudes/avrdude.git && cd avrdude || { display_status "Failed to clone avrdude repo."; return 1; }
+    sudo ./build.sh && sudo cmake --build build_linux --target install || { display_status "Failed to install avrdude."; return 1; }
+
+    # Install tio
+    cd ~/git
+    sudo apt-get -y install liblua5.4-dev meson
+    git clone git@github.com:tio/tio.git && cd ~/git/tio || { display_status "Failed to clone tio repo."; return 1; }
+    sudo meson setup build
+    sudo meson compile -C build
+    sudo meson install -C build
+
     display_status "Git repositories and software installed."
+
 }
 
 # Function to add GPG keys and return the path to the keyring
@@ -92,7 +110,7 @@ add_gpg_key() {
 
     # Check if key was successfully added
     if [ $? -eq 0 ]; then
-        display_status "GPG key added successfully to: $keyring"
+        # display_status "GPG key added successfully to: $keyring"
         echo "$keyring"
     else
         display_status "Failed to add GPG key."
@@ -111,83 +129,92 @@ add_source_file() {
     local keyring=$7
 
     # Remove old source file if exists
-    if [ -f "/etc/apt/sources.list.d/${file__name}.list" ]; then
-        sudo rm "/etc/apt/sources.list.d/${file__name}.list"
+    if [ -f "/etc/apt/sources.list.d/${file__name}.sources" ]; then
+        sudo rm "/etc/apt/sources.list.d/${file__name}.sources"
     fi
 
     # Add new source file
-    sudo tee "/etc/apt/sources.list.d/${file__name}.list" > /dev/null <<EOF
+    sudo tee "/etc/apt/sources.list.d/${file__name}.sources" > /dev/null <<EOF
 Types: $source_type
 URIs: $url
 Suites: $distribution
 Components: $components
 $(if [ -n "$arch" ]; then echo "Architectures: $arch"; fi)
 $(if [ -n "$keyring" ]; then echo "Signed-By: $keyring"; fi)
-X-Repolib-ID: $file__name
-X-Repolib-Name: $file__name
-Enabled: yes
+
 EOF
+# X-Repolib-ID: $file__name
+# X-Repolib-Name: $file__name
+# Enabled: yes
 }
 
 install_apt_sources() {
     # Prepare for installation of gpg keys
-    sudo apt install -y wget gnupg lsb-release apt-transport-https ca-certificates || { display_status "Failed to gpg requirenments."; return 1 }
+    sudo apt-get install -y wget gnupg lsb-release apt-transport-https ca-certificates || { display_status "Failed to gpg requirenments."; return 1; }
     # Install dependencies
     # - libsecret-1-dev (Mailspring)
     # - libxcb-cursor0 (Calibre)
     # - qt6-base-dev (MikTex console)
-    sudo apt install -y libsecret-1-dev libxcb-cursor0 qt6-base-dev || { display_status "Failed to dependencies."; return 1 }
+    sudo apt-get install -y libsecret-1-dev libxcb-cursor0 qt6-base-dev || { display_status "Failed to dependencies."; return 1; }
 
     # TODO: Felhantering
+    
     # Add source for Librewolf
+    echo "Librewolf"
     local distro=$(if echo " una bookworm vanessa focal jammy bullseye vera uma " | grep -q " $(lsb_release -sc) "; then lsb_release -sc; else echo focal; fi)
     local gpg_librewolf=$(add_gpg_key "https://deb.librewolf.net/keyring.gpg" "librewolf")
     add_source_file "librewolf" "deb" "https://deb.librewolf.net" "$distro" "main" "amd64" "$gpg_librewolf"
 
     # Add source for Spotify
+    echo "Spotify"
     local gpg_spotify=$(add_gpg_key "https://download.spotify.com/debian/pubkey_6224F9941A8AA6D1.gpg" "spotify")
     add_source_file "spotify" "deb" "http://repository.spotify.com" "stable" "non-free" "amd64" "$gpg_spotify"
 
     # Add source for Miktex
+    echo "Miktex"
     local gpg_miktex=$(add_gpg_key "https://miktex.org/download/key" "miktex")
     add_source_file "miktex" "deb" "https://miktex.org/download/ubuntu" "jammy" "universe" "amd64" "$gpg_miktex"
 
     # Add source for Sublime Tex and Sublime Merge
-    local gpg_sublime=$(add_gpg_key "hhttps://download.sublimetext.com/sublimehq-pub.gpg" "sublimehq-archive")
+    echo "Sublime"
+    local gpg_sublime=$(add_gpg_key "https://download.sublimetext.com/sublimehq-pub.gpg" "sublimehq-archive")
     add_source_file "sublime" "deb" "https://download.sublimetext.com/" "apt/stable/" "" "amd64" "$gpg_sublime"
 
     # Add source for Virtual box
+    echo "Virtual box"
     local gpg_virtualbox=$(add_gpg_key "https://www.virtualbox.org/download/oracle_vbox_2016.asc" "oracle-virtualbox-2016")
     add_source_file "virtualbox" "deb" "https://download.virtualbox.org/virtualbox/debian" "jammy" "contrib" "amd64" "$gpg_virtualbox"
 
     # Add source for Signal
+    echo "Signal"
     local gpg_signal=$(add_gpg_key "https://updates.signal.org/desktop/apt/keys.asc" "signal-desktop-keyring")
     add_source_file "signal" "deb" "https://updates.signal.org/desktop/apt" "xenial" "main" "amd64" "$gpg_signal"
 
     # Add source for JDK 17 LTS (Temurin)
+    echo "JDK"
     local version=$(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release)
     local gpg_temurin_17=$(add_gpg_key "https://packages.adoptium.net/artifactory/api/gpg/key/public" "adoptium")
     add_source_file "adoptium" "deb" "https://packages.adoptium.net/artifactory/deb" "$version" "main" "amd64" "$gpg_temurin_17"
 
     # Run all apt installations
-    sudo apt-get update && sudo apt-get install -y librewolf       \
-                                                   spotify         \
-                                                   miktex          \
-                                                   keepassxc       \
-                                                   sublime-text    \
-                                                   sublime-merge   \
-                                                   virtualbox      \
-                                                   signal-desktop  \
-                                                   temurin-17-jdk  \
+    sudo apt-get update && sudo apt-get install -y librewolf \
+                                                   spotify-client \
+                                                   miktex \
+                                                   keepassxc \
+                                                   sublime-text \
+                                                   sublime-merge \
+                                                   virtualbox \
+                                                   signal-desktop \
+                                                   temurin-17-jdk \
                                                    libsecret-tools \
-                                                   fprintd         \
-                                                   libpam-fprintd  \
-                                                    || { display_status "Failed to apt software."; return 1 }
+                                                   fprintd \
+                                                   libpam-fprintd \
+                                                    || { display_status "Failed to apt software."; return 1; }
 }
 
 install_flatpak() {
     # Install Gear Lever via flatpak
-    flatpak install flathub it.mijorus.gearlever || { display_status "Failed to install Gear Lever."; return 1 }
+    flatpak install flathub it.mijorus.gearlever || { display_status "Failed to install Gear Lever."; return 1; }
 }
 
 # Function to install software via deb files
@@ -203,18 +230,18 @@ install_as_deb() {
 
 install_deb() {
     # Install Steam
-    install_as_deb "steam.deb" "https://cdn.akamai.steamstatic.com/client/installer/steam.deb" || { display_status "Failed to install Steam."; return 1 }
+    install_as_deb "steam.deb" "https://cdn.akamai.steamstatic.com/client/installer/steam.deb" || { display_status "Failed to install Steam."; return 1; }
 
     # Install MailSpring
-    install_as_deb "mailspring.deb" "https://updates.getmailspring.com/download?platform=linuxDeb" || { display_status "Failed to install MailSpring."; return 1 }
+    install_as_deb "mailspring.deb" "https://updates.getmailspring.com/download?platform=linuxDeb" || { display_status "Failed to install MailSpring."; return 1; }
 
     # Install Discord
-    install_as_deb "discord.deb" "https://discord.com/api/download?platform=linux&format=deb" || { display_status "Failed to install Discord."; return 1 }
+    install_as_deb "discord.deb" "https://discord.com/api/download?platform=linux&format=deb" || { display_status "Failed to install Discord."; return 1; }
 }
 
 install_ppa() {
     # Install KeePassXC
-    sudo add-apt-repository ppa:phoerious/keepassxc -y || { display_status "Failed to add KeePassXC PPA."; return 1 }
+    sudo add-apt-repository ppa:phoerious/keepassxc -y || { display_status "Failed to add KeePassXC PPA."; return 1; }
 }
 
 # Function to append text to user's .bashrc
@@ -224,13 +251,13 @@ append_to_bashrc() {
 
 install_script() {
     # Install Calibre
-    wget -nv -O- https://download.calibre-ebook.com/linux-installer.sh | sudo sh /dev/stdin || { display_status "Failed to install Calibre."; return 1 }
+    wget -nv -O- https://download.calibre-ebook.com/linux-installer.sh | sudo sh /dev/stdin || { display_status "Failed to install Calibre."; return 1; }
 
     # Install rclone
-    curl https://rclone.org/install.sh | sudo bash || { display_status "Failed to install rclone."; return 1 }
+    curl https://rclone.org/install.sh | sudo bash || { display_status "Failed to install rclone."; return 1; }
 
     # Install mcfly (improved reverse search in terminal)
-    curl -LSfs https://raw.githubusercontent.com/cantino/mcfly/master/ci/install.sh | sudo sh -s -- --git cantino/mcfly || { display_status "Failed to mcfly."; return 1 }
+    curl -LSfs https://raw.githubusercontent.com/cantino/mcfly/master/ci/install.sh | sudo sh -s -- --git cantino/mcfly || { display_status "Failed to mcfly."; return 1; }
     append_to_bashrc 'eval "$(mcfly init bash)"'
 
     # Install OVPN VPN client
@@ -238,10 +265,10 @@ install_script() {
     link="https://files.ovpn.com/client/new-updates/linux/ubuntu-qt6/release/repo/OVPN-linux-"
     html=$(curl -s "$url")
     link2=$(echo "$html" | grep -o '<a [^>]*href="[^"]*"' | grep $link | sed 's/<a [^>]*href="\([^"]*\)"/\1/')
-    curl -L -o ovpn.run $link2 || { display_status "Failed to download OVPN."; return 1 }
+    curl -L -o ovpn.run $link2 || { display_status "Failed to download OVPN."; return 1; }
     wait $!
     chmod +x ovpn.run
-    ./ovpn.run || { display_status "Failed to install OVPN."; return 1 }
+    ./ovpn.run || { display_status "Failed to install OVPN."; return 1; }
 }
 
 # Function to install miscellaneous software
@@ -331,10 +358,10 @@ add_custom_keybinding() {
 
 
 disable_brltty() {
-    sudo systemctl stop brltty-udev.service || { display_status "Failed to stop service brltty-udev."; return 1 }
-    sudo systemctl mask brltty-udev.service || { display_status "Failed to mask service brltty-udev."; return 1 }
-    sudo systemctl stop brltty.service || { display_status "Failed to stop service brltty."; return 1 }
-    sudo systemctl disable brltty.service || { display_status "Failed to disable service brltty."; return 1 }
+    sudo systemctl stop brltty-udev.service || { display_status "Failed to stop service brltty-udev."; return 1; }
+    sudo systemctl mask brltty-udev.service || { display_status "Failed to mask service brltty-udev."; return 1; }
+    sudo systemctl stop brltty.service || { display_status "Failed to stop service brltty."; return 1; }
+    sudo systemctl disable brltty.service || { display_status "Failed to disable service brltty."; return 1; }
 }
 
 set_aliases() {
@@ -342,7 +369,7 @@ set_aliases() {
     echo "alias e='echo'" | tee ~/.bashrc --append
 
     # Set py alias to point to python3
-    sudo update-alternatives --install /usr/bin/py py /usr/bin/python3 1 || { display_status "Failed to update "; return 1 }
+    sudo update-alternatives --install /usr/bin/py py /usr/bin/python3 1 || { display_status "Failed to update "; return 1; }
 }
 
 remove_autostarts() {
@@ -406,9 +433,6 @@ configure_settings() {
     
     # Add KeePass's database password to keychain
     add_keepass_password_to_keychain
-
-    
-
 }
 
 # Function to run all actions
@@ -425,10 +449,31 @@ run_all() {
     configure_settings
 }
 
+display_menu() {
+    zenity --list --title="Meny" --text="Välj en åtgärd:" --column="Val" \
+    "1.  Installera och uppgradera paket" \
+    "2.  Konfigurera SSH-mapp" \
+    "3.  Installera Cascadia-fonten" \
+    "4.  Installera Starship Terminal" \
+    "5.  Uppdatera GNOME Terminalinställningar" \
+    "6.  Ta bort gamla Git-repositorier" \
+    "7.  Installera Git-repositorier och programvara" \
+    "8.  Installera diverse programvara" \
+    "9.  - Installera apt käller" \
+    "10. - Installera deb" \
+    "11. - Installera PPA" \
+    "12. - Installera script" \
+    "13. Konfigurera inställningar" \
+    "14. Gör allt" \
+    --width=350 --height=370
+}
+
+
 # Main function to handle user interaction and execute selected actions
 main() {
+    sudo -v
     while true; do
-        choice=$(display_menu)  # Call the display_menu function and store the user's choice
+        choice=$(display_menu | cut -d '.' -f 1) # Call the display_menu function and store the user's choice
         case $choice in
             1) install_and_upgrade_packages ;;  # Call the appropriate function based on the user's choice
             2) setup_ssh ;;
@@ -438,13 +483,18 @@ main() {
             6) remove_old_git_repos ;;
             7) install_git_repos_and_software ;;
             8) install_miscellaneous_software ;;
-            9) configure_settings ;;
-            10) run_all ;;
-            0) echo "Exiting the program. Goodbye!"; exit ;;  # Exit the script if the user chooses to exit
-            *) display_status "Invalid choice. Please try again." ;;  # Display an error message for invalid choices
+            9) install_apt_sources ;;
+            10) install_deb ;;
+            11) install_ppa ;;
+            12) install_script ;;
+            13) configure_settings ;;
+            14) run_all ;;
+            *) echo "Exiting the program. Goodbye!"; exit ;;  # Exit the script if the user chooses to exit
+            # *) display_status "Invalid choice. Please try again." ;;  # Display an error message for invalid choices
         esac
     done
 }
 
 # Run the main function
 main
+

@@ -166,9 +166,9 @@ install_apt_sources() {
     add_source_file "librewolf" "deb" "https://deb.librewolf.net" "$distro" "main" "amd64" "$gpg_librewolf"
 
     # Add source for Spotify
-    echo "Spotify"
-    local gpg_spotify=$(add_gpg_key "https://download.spotify.com/debian/pubkey_6224F9941A8AA6D1.gpg" "spotify")
-    add_source_file "spotify" "deb" "http://repository.spotify.com" "stable" "non-free" "amd64" "$gpg_spotify"
+    #echo "Spotify"
+    #local gpg_spotify=$(add_gpg_key "https://download.spotify.com/debian/pubkey_6224F9941A8AA6D1.gpg" "spotify")
+    #add_source_file "spotify" "deb" "http://repository.spotify.com" "stable" "non-free" "amd64" "$gpg_spotify"
 
     # Add source for Miktex
     echo "Miktex"

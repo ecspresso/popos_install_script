@@ -85,7 +85,7 @@ install_git_repos_and_software() {
     # Install tio
     cd ~/git
     sudo apt-get -y install liblua5.4-dev meson
-    git clone git@github.com:tio/tio.git && cd ~/git/tio || { display_status "Failed to clone tio repo."; return 1; }
+    git clone https://github.com/tio/tio.git && cd ~/git/tio || { display_status "Failed to clone tio repo."; return 1; }
     sudo meson setup build
     sudo meson compile -C build
     sudo meson install -C build

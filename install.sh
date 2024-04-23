@@ -378,7 +378,7 @@ remove_autostarts() {
     rm /home/$USER/.config/autostart/geary-autostart.desktop 2>/dev/null
 }
 
-remove_password_req_for_sudo() {
+exempt_command_from_sudo_password() {
     local command=$1
     echo "$USER ALL = (ALL:ALL) NOPASSWD: $command" | sudo tee /etc/sudoers.d/$USER --append > /dev/null
 }

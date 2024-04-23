@@ -215,6 +215,7 @@ install_apt_sources() {
 install_flatpak() {
     # Install Gear Lever via flatpak
     flatpak install flathub it.mijorus.gearlever || { display_status "Failed to install Gear Lever."; return 1; }
+    flatpak install flathub cc.arduino.IDE2 || { display_status "Failed to install Arduino IDE 2."; return 1; }
 }
 
 # Function to install software via deb files
@@ -433,6 +434,9 @@ configure_settings() {
     
     # Add KeePass's database password to keychain
     add_keepass_password_to_keychain
+
+    # Add user to vboxusers group
+    sudo usermod -a -G vboxusers $USER
 }
 
 # Function to run all actions

@@ -215,7 +215,20 @@ install_apt_sources() {
 install_flatpak() {
     # Install Gear Lever via flatpak
     flatpak install flathub it.mijorus.gearlever || { display_status "Failed to install Gear Lever."; return 1; }
+    # Arduino IDE 2
     flatpak install flathub cc.arduino.IDE2 || { display_status "Failed to install Arduino IDE 2."; return 1; }
+    # Gaphor
+    flatpak install flathub org.gaphor.Gaphor || { display_status "Failed to install Gaphor"; return 1; }
+    # DConf
+    flatpak install flathub ca.desrt.dconf-editor || { display_status "Failed to install DConf Editor"; return 1; }
+    # Text Pieces
+    flatpak install flathub com.github.liferooter.textpieces || { display_status "Failed to install Text Pieces"; return 1; }
+    # Ungoogled Chrome
+    flatpak install flathub io.github.ungoogled_software.ungoogled_chromium || { display_status "Failed to install Ungoogled Chromium"; return 1; }
+    # MenuLibre
+    flatpak install flathub org.bluesabre.MenuLibre || { display_status "Failed to install MenuLibre"; return 1; }
+    # Flameshot
+    flatpak install flathub org.flameshot.Flameshot || { display_status "Failed to install Flameshot"; return 1; }
 }
 
 # Function to install software via deb files

@@ -285,6 +285,21 @@ install_script() {
     ./ovpn.run || { display_status "Failed to install OVPN."; return 1; }
 }
 
+install_andrioid_studio() {
+    # Update before installation dependencies
+    sudo apt-get update
+    # Install dependencies
+    sudo apt-get -y install libc6:i386 libncurses5:i386 libstdc++6:i386 lib32z1 libbz2-1.0:i386
+    # Download Android Studio
+    curl https://redirector.gvt1.com/edgedl/android/studio/ide-zips/2023.2.1.25/android-studio-2023.2.1.25-linux.tar.gz --output android-studio.tar.gz --output-dir /tmp/ -LZ
+    # Unpack to /opt/
+    sudo tar -xzf /tmp/android-studio.tar.gz -C /opt/
+    # Remove archive
+    rm /tmp/android-studio.tar.gz
+    # Create desktop file
+    # TBA
+}
+
 # Function to install miscellaneous software
 install_miscellaneous_software() {
     display_status "Installing miscellaneous software..."
@@ -293,6 +308,7 @@ install_miscellaneous_software() {
     install_deb
     install_ppa
     install_script
+    install_andrioid_studio
 
     display_status "Miscellaneous software installed."
 }

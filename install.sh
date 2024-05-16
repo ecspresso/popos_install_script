@@ -57,7 +57,7 @@ update_gnome_terminal_settings() {
 # Remove old git folder in case of OS refresh to avoid conflicts
 remove_old_git_repos() {
     display_status "Removing old Git repositories..."
-    rm -rf ~/git/xpadneo ~/git/avra ~/git/avrdude ~/git/tio || { display_status "Failed to remove old git folders."; return 1; }
+    sudo rm -rf ~/git/xpadneo ~/git/avra ~/git/avrdude ~/git/tio || { display_status "Failed to remove old git folders."; return 1; }
     display_status "Old Git repositories removed."
 }
 
@@ -167,8 +167,8 @@ install_apt_sources() {
 
     # Add source for Spotify
     #echo "Spotify"
-    #local gpg_spotify=$(add_gpg_key "https://download.spotify.com/debian/pubkey_6224F9941A8AA6D1.gpg" "spotify")
-    #add_source_file "spotify" "deb" "http://repository.spotify.com" "stable" "non-free" "amd64" "$gpg_spotify"
+    local gpg_spotify=$(add_gpg_key "https://download.spotify.com/debian/pubkey_6224F9941A8AA6D1.gpg" "spotify")
+    add_source_file "spotify" "deb" "http://repository.spotify.com" "stable" "non-free" "amd64" "$gpg_spotify"
 
     # Add source for Miktex
     echo "Miktex"

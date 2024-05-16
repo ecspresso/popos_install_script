@@ -1,9 +1,0 @@
-#!/bin/bash
-
-equation=""
-
-for arg in "$@"; do
-    equation="${equation}${arg}"
-done
-
-gnome-calculator -s $equation

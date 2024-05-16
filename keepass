@@ -1,0 +1,8 @@
+#!/bin/bash
+
+db_file=""
+db_key_file=""
+
+secret-tool lookup application keepassxc | keepassxc --pw-stdin $db_file --keyfile $db_key_file
+
+#secret-tool store --label "KeePass" application keepassxc

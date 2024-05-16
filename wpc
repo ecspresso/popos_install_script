@@ -1,0 +1,59 @@
+#!/bin/bash
+
+exit_file="/home/emile/.nowpc"
+
+if [ -z "$1" ] && [ -e "$exit_file" ]; then
+    exit 0
+fi
+
+PID=$(pgrep gnome-session | tail -n1)
+export DBUS_SESSION_BUS_ADDRESS=$(grep -z DBUS_SESSION_BUS_ADDRESS /proc/$PID/environ | tr '\0' '\n' |cut -d= -f2-)
+
+
+nuvarande_bakgrund=$(gsettings get org.gnome.desktop.background picture-uri | xargs echo | sed 's/file:\/\///')
+katalog=$(dirname "$nuvarande_bakgrund")
+filnamn=$(basename "$nuvarande_bakgrund")
+sista_filen=$(ls -v $katalog | tail -n 1)
+
+
+if [ "$1" == "echo" ]; then
+	echo $nuvarande_bakgrund
+	echo $katalog
+	echo $filnamn
+	exit 0
+fi
+
+
+if [ "$1" == prev ]; then
+	forsta_filen=$(ls -v $katalog | head -n 1)
+	if [ "$forsta_filen" == "$filnamn" ]; then
+		nasta_bild=$katalog/$(ls -v $katalog | head -n 1)
+	else
+		nasta_bild=$katalog/$(ls -v $katalog | grep -B 1 $filnamn | awk 'NR==1')
+	fi
+elif [ "$filnamn" == "$sista_filen" ]; then
+	nasta_bild=$katalog/$(ls -v $katalog | head -n 1)
+else
+	nasta_bild=$katalog/$(ls -v $katalog | grep -A 1 $filnamn | awk 'NR==2')
+fi
+
+if [ "$1" == "whatif" ]; then
+	echo "$nuvarande_bakgrund -> $nasta_bild"
+	exit 0
+fi
+
+gsettings set org.gnome.desktop.background picture-uri "file://$nasta_bild"
+
+if [ "$1" == "radera" ]; then
+	rm $nuvarande_bakgrund
+fi
+
+
+# gsettings get org.gnome.desktop.background picture-uri
+# gsettings set org.gnome.desktop.background picture-uri "file:///home/emile/Images/Väggpapper/2966768.jpg"
+# gsettings set org.gnome.desktop.background picture-uri "file:///home/emile/Images/Väggpapper/2887594.jpg"
+
+# echo $nuvarande_bakgrund
+# echo $katalog
+# echo $filnamn
+# echo $sista_filen
